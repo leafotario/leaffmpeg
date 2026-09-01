@@ -69,7 +69,7 @@ function extractTweetId(input) {
   // Se já é um ID numérico
   if (/^\d{5,25}$/.test(trimmed)) return trimmed;
 
-  // Regex para múltiplos formatos de URL do Twitter/X
+  // Regex para múltiplos formatos de URL do Twitter
   const match =
     trimmed.match(/(?:twitter\.com|x\.com|fixupx\.com|vxtwitter\.com|fxtwitter\.com)\/(?:#!\/)?(?:[a-zA-Z0-9_]+)\/status(?:es)?\/(\d+)/i) ||
     trimmed.match(/(?:twitter\.com|x\.com)\/i\/(?:web\/)?status\/(\d+)/i) ||
@@ -358,7 +358,7 @@ async function extractFromVxTwitter(tweetId) {
 async function extractTweetMedia(tweetInput) {
   const tweetId = extractTweetId(tweetInput);
   if (!tweetId) {
-    throw new Error('Link do Twitter/X inválido. Insira um link como https://x.com/usuario/status/123456...');
+    throw new Error('Link do Twitter inválido. Insira um link como https://x.com/usuario/status/123456...');
   }
 
   let result = null;
@@ -587,7 +587,7 @@ async function extractFromDirectUrl(url) {
 }
 
 /**
- * Função unificada de extração para qualquer entrada (Twitter/X, Discord CDN, Discord Message, URL direta).
+ * Função unificada de extração para qualquer entrada (Twitter, Discord CDN, Discord Message, URL direta).
  */
 async function extractUniversalMedia(input) {
   if (!input || typeof input !== 'string') {
@@ -606,7 +606,7 @@ async function extractUniversalMedia(input) {
     return await extractFromDiscordMessage(trimmed);
   }
 
-  // 3. Link ou ID do Twitter/X
+  // 3. Link ou ID do Twitter
   const tweetId = extractTweetId(trimmed);
   if (tweetId) {
     return await extractTweetMedia(trimmed);
@@ -617,7 +617,7 @@ async function extractUniversalMedia(input) {
     return await extractFromDirectUrl(trimmed);
   }
 
-  throw new Error('Link não suportado. Cole um link do Twitter/X, Discord (CDN/anexo) ou link direto de vídeo/imagem.');
+  throw new Error('Link não suportado. Cole um link do Twitter, Discord (CDN/anexo) ou link direto de vídeo/imagem.');
 }
 
 // =============================================================================

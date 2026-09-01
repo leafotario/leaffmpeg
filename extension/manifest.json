@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "LeaFFMPEG",
   "version": "1.0.0",
-  "description": "Converta vídeos e mídias do Twitter/X, Discord e links diretos em GIFs otimizados (≤ 8MB) para envio no Discord, com suporte a legendas estilo meme.",
+  "description": "Converta vídeos e mídias do Twitter, Discord e links diretos em GIFs otimizados (≤ 8MB) para envio no Discord, com suporte a legendas estilo meme.",
 
   "icons": {
     "16": "assets/icon-16.png",

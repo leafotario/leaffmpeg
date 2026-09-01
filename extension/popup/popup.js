@@ -172,7 +172,7 @@ function formatBytes(bytes) {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
-/** Extrai ID do tweet a partir de links do Twitter/X */
+/** Extrai ID do tweet a partir de links do Twitter */
 function extractTweetId(url) {
   if (!url) return null;
   const str = url.trim();
@@ -697,7 +697,7 @@ function loadLocalFile(file) {
 }
 
 // =============================================================================
-// BUSCA DE MÍDIA DO TWITTER/X (VÍDEOS, GIFS E FOTOS)
+// BUSCA DE MÍDIA DO TWITTER (VÍDEOS, GIFS E FOTOS)
 // =============================================================================
 
 async function fetchMedia() {
@@ -705,7 +705,7 @@ async function fetchMedia() {
   const inputType = detectInputType(input);
 
   if (!inputType) {
-    showToast('Insira um link válido do Twitter/X, Discord ou URL de mídia.', 'error');
+    showToast('Insira um link válido do Twitter, Discord ou URL de mídia.', 'error');
     updateStatusBadge('error', 'Link Inválido');
     return;
   }
@@ -722,7 +722,7 @@ async function fetchMedia() {
     showToast('Localizando anexo no Discord...', 'info');
   } else if (inputType === 'twitter') {
     updateStatusBadge('busy', 'Buscando Post...');
-    showToast('Buscando post no Twitter/X...', 'info');
+    showToast('Buscando post no Twitter...', 'info');
   } else {
     updateStatusBadge('busy', 'Carregando Mídia...');
     showToast('Carregando link direto...', 'info');
@@ -1509,11 +1509,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
     if (tab && tab.url) {
-      // 1. Detecção de post do Twitter/X
+      // 1. Detecção de post do Twitter
       const tweetId = extractTweetId(tab.url);
       if (tweetId) {
         tweetUrlInput.value = tab.url;
-        showToast('Link do Twitter/X detectado na aba ativa!', 'info');
+        showToast('Link do Twitter detectado na aba ativa!', 'info');
         fetchMedia();
         return;
       }

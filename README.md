@@ -22,7 +22,7 @@ Extensão de navegador pra converter vídeos, GIFs e imagens do Twitter, Discord
 
 ## Features
 
-- **Suporte a Twitter/X e Discord**: Cole links de tweets, links diretos de anexos do Discord (`cdn.discordapp.com`) ou links de mensagens do Discord.
+- **Suporte a Twitter e Discord**: Cole links de tweets, links diretos de anexos do Discord (`cdn.discordapp.com`) ou links de mensagens do Discord.
 - **Detecção Automática**: Ao abrir a extensão enquanto estiver no Twitter ou Discord Web, a mídia é detectada e carregada automaticamente.
 - **Entrada Manual & Drag and Drop**: Cole URLs ou arraste arquivos de vídeo (`.mp4`, `.webm`) e imagens (`.gif`, `.png`, `.jpg`, `.webp`).
 - **Otimização Inteligente para Discord**: Garante que o GIF gerado respeite estritamente o limite de **8.0 MB** para envio no Discord sem Nitro.
