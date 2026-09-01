@@ -152,6 +152,50 @@ function extractTweetId(url) {
   return m ? m[1] : null;
 }
 
+/** Verifica se a URL é do Discord CDN ou Media Proxy */
+function isDiscordCdnUrl(url) {
+  if (!url || typeof url !== 'string') return false;
+  return /https?:\/\/(?:cdn\.discordapp\.com|media\.discordapp\.net|images-ext-\d+\.discordapp\.net)\/(?:attachments|ephemeral-attachments|external)\/[^\s]+/i.test(url.trim());
+}
+
+/** Verifica se a URL é um link de mensagem do Discord */
+function isDiscordMessageUrl(url) {
+  if (!url || typeof url !== 'string') return false;
+  return /https?:\/\/(?:ptb\.|canary\.)?discord\.com\/channels\/([0-9@me]+)\/(\d+)\/(\d+)/i.test(url.trim());
+}
+
+/** Verifica se a URL é um link direto de arquivo de mídia suportado */
+function isDirectMediaUrl(url) {
+  if (!url || typeof url !== 'string') return false;
+  try {
+    const parsed = new URL(url.trim());
+    return /\.(mp4|webm|mov|m4v|gif|png|jpe?g|webp)$/i.test(parsed.pathname);
+  } catch {
+    return false;
+  }
+}
+
+/** Verifica se o caminho da URL termina com uma extensão (ignorando query params) */
+function urlPathEndsWith(urlStr, extension) {
+  try {
+    const parsed = new URL(urlStr);
+    return parsed.pathname.toLowerCase().endsWith(extension.toLowerCase());
+  } catch {
+    return urlStr.toLowerCase().includes(extension.toLowerCase());
+  }
+}
+
+/** Detecta o tipo de link de entrada */
+function detectInputType(url) {
+  if (!url) return null;
+  const trimmed = url.trim();
+  if (isDiscordCdnUrl(trimmed)) return 'discord_cdn';
+  if (isDiscordMessageUrl(trimmed)) return 'discord_msg';
+  if (extractTweetId(trimmed)) return 'twitter';
+  if (isDirectMediaUrl(trimmed)) return 'direct';
+  return null;
+}
+
 // =============================================================================
 // COMUNICAÇÃO COM O SERVICE WORKER
 // =============================================================================
@@ -460,10 +504,10 @@ function loadLocalFile(file) {
 
 async function fetchMedia() {
   const input = tweetUrlInput.value.trim();
-  const id = extractTweetId(input);
+  const inputType = detectInputType(input);
 
-  if (!id) {
-    showToast('Insira um link válido do Twitter/X.', 'error');
+  if (!inputType) {
+    showToast('Insira um link válido do Twitter/X, Discord ou URL de mídia.', 'error');
     updateStatusBadge('error', 'Link Inválido');
     return;
   }
@@ -472,19 +516,30 @@ async function fetchMedia() {
   resultContainer.classList.remove('visible');
   mediaSelector.classList.remove('visible');
 
-  updateStatusBadge('busy', 'Buscando Post...');
-  showToast('Buscando mídia do post no Twitter/X...', 'info');
+  if (inputType === 'discord_cdn') {
+    updateStatusBadge('busy', 'Buscando Anexo...');
+    showToast('Buscando anexo do Discord...', 'info');
+  } else if (inputType === 'discord_msg') {
+    updateStatusBadge('busy', 'Buscando Mensagem...');
+    showToast('Localizando anexo no Discord...', 'info');
+  } else if (inputType === 'twitter') {
+    updateStatusBadge('busy', 'Buscando Post...');
+    showToast('Buscando post no Twitter/X...', 'info');
+  } else {
+    updateStatusBadge('busy', 'Carregando Mídia...');
+    showToast('Carregando link direto...', 'info');
+  }
   fetchBtn.disabled = true;
 
   try {
-    const response = await sendToBackground('EXTRACT_MEDIA', { tweetUrl: input });
+    const response = await sendToBackground('EXTRACT_MEDIA', { url: input, tweetUrl: input });
     const data = response.data;
 
     fetchBtn.disabled = false;
 
     if (!data || (!data.bestVideoUrl && !data.bestImageUrl && (!data.photos || data.photos.length === 0))) {
       updateStatusBadge('error', 'Sem Mídia');
-      showToast('Nenhum vídeo, GIF ou imagem encontrado no post.', 'error');
+      showToast('Nenhum vídeo, GIF ou imagem encontrado no link.', 'error');
       return;
     }
 
@@ -508,11 +563,12 @@ async function fetchMedia() {
 
     if (data.bestVideoUrl) {
       const isGif = data.isGif || data.mediaType === 'animated_gif' || data.bestVideoUrl.includes('tweet_video');
+      const isRealGif = Boolean(data.isRealGif || (isGif && urlPathEndsWith(data.bestVideoUrl, '.gif')) || urlPathEndsWith(data.bestVideoUrl, '.gif'));
       activeMediaList.push({
         url: data.bestVideoUrl,
         type: isGif ? 'gif' : 'video',
         isLocal: false,
-        isRealGif: data.bestVideoUrl.endsWith('.gif'),
+        isRealGif,
         tweetData: data
       });
 
@@ -524,6 +580,7 @@ async function fetchMedia() {
             url,
             type: isGif ? 'gif' : 'video',
             isLocal: false,
+            isRealGif: urlPathEndsWith(url, '.gif'),
             tweetData: data
           }));
         }
@@ -574,7 +631,7 @@ async function fetchMedia() {
   } catch (err) {
     fetchBtn.disabled = false;
     updateStatusBadge('error', 'Erro na Busca');
-    showToast(err.message || 'Erro ao conectar ao Twitter/X.', 'error');
+    showToast(err.message || 'Erro ao carregar mídia.', 'error');
   }
 }
 
@@ -1100,6 +1157,35 @@ function displayGifResult(blob, maxLimitLabel) {
 // INICIALIZAÇÃO & AUTO-DETECÇÃO NA ABA ATIVA
 // =============================================================================
 
+/** Função injetada na aba do Discord para localizar anexos visíveis no chat */
+function scanDiscordPageForMedia() {
+  const videos = Array.from(document.querySelectorAll('article video, li[class*="message"] video, div[class*="message"] video, video'));
+  for (let i = videos.length - 1; i >= 0; i--) {
+    const v = videos[i];
+    if (v && v.src && (v.src.includes('discordapp') || v.src.startsWith('http'))) {
+      return v.src;
+    }
+  }
+
+  const links = Array.from(document.querySelectorAll('a[href*="discordapp.com/attachments/"], a[href*="discordapp.net/attachments/"]'));
+  for (let i = links.length - 1; i >= 0; i--) {
+    const a = links[i];
+    if (a && a.href && /\.(mp4|webm|mov|gif|png|jpe?g|webp)(\?.*)?$/i.test(a.href)) {
+      return a.href;
+    }
+  }
+
+  const imgs = Array.from(document.querySelectorAll('article img[src*="attachments/"], li[class*="message"] img[src*="attachments/"], img[src*="discordapp.net/attachments/"]'));
+  for (let i = imgs.length - 1; i >= 0; i--) {
+    const img = imgs[i];
+    if (img && img.src && !img.src.includes('avatars') && !img.src.includes('emojis')) {
+      return img.src;
+    }
+  }
+
+  return null;
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('[LeaFFMPEG] Popup inicializado.');
   updateStatusBadge('ready', 'Pronto');
@@ -1108,12 +1194,40 @@ document.addEventListener('DOMContentLoaded', async () => {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
     if (tab && tab.url) {
+      // 1. Detecção de post do Twitter/X
       const tweetId = extractTweetId(tab.url);
-
       if (tweetId) {
         tweetUrlInput.value = tab.url;
         showToast('Link do Twitter/X detectado na aba ativa!', 'info');
         fetchMedia();
+        return;
+      }
+
+      // 2. Detecção de link direto de mídia ou Discord CDN
+      if (isDiscordCdnUrl(tab.url) || isDirectMediaUrl(tab.url)) {
+        tweetUrlInput.value = tab.url;
+        showToast('Link de mídia detectado na aba ativa!', 'info');
+        fetchMedia();
+        return;
+      }
+
+      // 3. Detecção em aba aberta do Discord Web
+      if (tab.url.includes('discord.com/') || tab.url.includes('discordapp.com/')) {
+        try {
+          const results = await chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            func: scanDiscordPageForMedia
+          });
+
+          if (results && results[0] && results[0].result) {
+            tweetUrlInput.value = results[0].result;
+            showToast('Mídia do Discord detectada no chat ativo!', 'info');
+            fetchMedia();
+            return;
+          }
+        } catch (e) {
+          console.log('[LeaFFMPEG] Auto-scan Discord silencioso:', e.message);
+        }
       }
     }
   } catch (err) {

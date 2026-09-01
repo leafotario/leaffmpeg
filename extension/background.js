@@ -402,6 +402,225 @@ async function extractTweetMedia(tweetInput) {
 }
 
 // =============================================================================
+// DETECÇÃO E PROCESSAMENTO DE LINKS DO DISCORD E MÍDIA DIRETA
+// =============================================================================
+
+/**
+ * Verifica se a URL é um link direto do Discord CDN ou Media Proxy.
+ * Ex: https://cdn.discordapp.com/attachments/... ou https://media.discordapp.net/attachments/...
+ */
+function isDiscordCdnUrl(url) {
+  if (!url || typeof url !== 'string') return false;
+  return /https?:\/\/(?:cdn\.discordapp\.com|media\.discordapp\.net|images-ext-\d+\.discordapp\.net)\/(?:attachments|ephemeral-attachments|external)\/[^\s]+/i.test(url.trim());
+}
+
+/**
+ * Verifica se a URL é um link de mensagem do Discord.
+ * Ex: https://discord.com/channels/123/456/789
+ */
+function isDiscordMessageUrl(url) {
+  if (!url || typeof url !== 'string') return false;
+  return /https?:\/\/(?:ptb\.|canary\.)?discord\.com\/channels\/([0-9@me]+)\/(\d+)\/(\d+)/i.test(url.trim());
+}
+
+/**
+ * Verifica se a URL é um link direto de arquivo de mídia suportado.
+ */
+function isDirectMediaUrl(url) {
+  if (!url || typeof url !== 'string') return false;
+  try {
+    const parsed = new URL(url.trim());
+    return /\.(mp4|webm|mov|m4v|gif|png|jpe?g|webp)$/i.test(parsed.pathname);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Obtém a extensão limpa do caminho da URL (ignorando query parameters).
+ */
+function getUrlExtension(url) {
+  try {
+    const parsed = new URL(url);
+    const parts = parsed.pathname.split('.');
+    return parts.length > 1 ? parts.pop().toLowerCase() : '';
+  } catch {
+    return '';
+  }
+}
+
+/**
+ * Obtém o nome do arquivo a partir da URL.
+ */
+function getUrlFilename(url) {
+  try {
+    const parsed = new URL(url);
+    const lastPart = parsed.pathname.split('/').pop() || 'discord_media';
+    return decodeURIComponent(lastPart);
+  } catch {
+    return 'discord_media';
+  }
+}
+
+/**
+ * Extrai mídia de uma URL do Discord CDN.
+ */
+async function extractFromDiscordCdn(mediaUrl) {
+  const url = mediaUrl.trim();
+  const ext = getUrlExtension(url);
+  const filename = getUrlFilename(url);
+
+  let isVideo = ['mp4', 'webm', 'mov', 'm4v'].includes(ext);
+  let isGif = ext === 'gif';
+  let isPhoto = ['png', 'jpg', 'jpeg', 'webp', 'bmp'].includes(ext);
+
+  if (!isVideo && !isGif && !isPhoto) {
+    try {
+      const headRes = await fetchWithTimeout(url, { method: 'HEAD' }, 5000);
+      const ct = headRes.headers.get('Content-Type') || '';
+      if (ct.startsWith('video/')) isVideo = true;
+      else if (ct === 'image/gif') isGif = true;
+      else if (ct.startsWith('image/')) isPhoto = true;
+    } catch {
+      isVideo = true;
+    }
+  }
+
+  return {
+    source: 'discord',
+    id: filename,
+    text: filename,
+    author: {
+      name: 'Discord Anexo',
+      screen_name: filename,
+      avatar_url: 'https://cdn.discordapp.com/embed/avatars/0.png'
+    },
+    bestVideoUrl: (isVideo || isGif) ? url : null,
+    bestImageUrl: isPhoto ? url : null,
+    isGif: isGif,
+    isRealGif: isGif,
+    mediaType: isVideo ? 'video' : (isGif ? 'animated_gif' : 'photo'),
+    photos: isPhoto ? [url] : []
+  };
+}
+
+/**
+ * Extrai mídia de uma mensagem do Discord inspecionando abas abertas no Discord Web.
+ */
+async function extractFromDiscordMessage(messageUrl) {
+  const match = messageUrl.match(/discord\.com\/channels\/([0-9@me]+)\/(\d+)\/(\d+)/i);
+  if (!match) {
+    throw new Error('Formato de link de mensagem do Discord inválido.');
+  }
+
+  const [_, guildId, channelId, messageId] = match;
+
+  let tabs = [];
+  try {
+    tabs = await chrome.tabs.query({ url: "*://*.discord.com/*" });
+  } catch (e) {
+    console.warn('[BG] Falha ao consultar abas:', e.message);
+  }
+
+  if (!tabs || tabs.length === 0) {
+    throw new Error('Link de mensagem do Discord detectado! Abra o Discord Web no navegador ou copie o link direto da mídia (botão direito no vídeo/imagem > Copiar Link).');
+  }
+
+  for (const tab of tabs) {
+    try {
+      const results = await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        func: (mId) => {
+          const container = document.querySelector(`[id*="${mId}"], [data-list-item-id*="${mId}"]`);
+          if (container) {
+            const v = container.querySelector('video');
+            if (v && v.src) return { url: v.src };
+
+            const a = container.querySelector('a[href*="discordapp.com/attachments"], a[href*="discordapp.net/attachments"]');
+            if (a && a.href) return { url: a.href };
+
+            const img = container.querySelector('img[src*="attachments"]');
+            if (img && img.src && !img.src.includes('avatars')) return { url: img.src };
+          }
+          return null;
+        },
+        args: [messageId]
+      });
+
+      if (results && results[0] && results[0].result && results[0].result.url) {
+        return await extractFromDiscordCdn(results[0].result.url);
+      }
+    } catch (e) {
+      console.warn('[BG] Falha ao executar script na aba do Discord:', e.message);
+    }
+  }
+
+  throw new Error('Mensagem do Discord localizada, mas nenhum vídeo ou anexo foi detectado. Dica: Clique com botão direito no vídeo/imagem no Discord e escolha "Copiar Link".');
+}
+
+/**
+ * Extrai mídia de uma URL direta (qualquer link direto de MP4, GIF, WEBM, PNG, JPG).
+ */
+async function extractFromDirectUrl(url) {
+  const ext = getUrlExtension(url);
+  const filename = getUrlFilename(url);
+  const isVideo = ['mp4', 'webm', 'mov', 'm4v'].includes(ext);
+  const isGif = ext === 'gif';
+  const isPhoto = ['png', 'jpg', 'jpeg', 'webp', 'bmp'].includes(ext);
+
+  return {
+    source: 'direct',
+    id: filename,
+    text: filename,
+    author: {
+      name: 'Mídia Direta',
+      screen_name: filename,
+      avatar_url: ''
+    },
+    bestVideoUrl: (isVideo || isGif) ? url : null,
+    bestImageUrl: isPhoto ? url : null,
+    isGif: isGif,
+    isRealGif: isGif,
+    mediaType: isVideo ? 'video' : (isGif ? 'animated_gif' : 'photo'),
+    photos: isPhoto ? [url] : []
+  };
+}
+
+/**
+ * Função unificada de extração para qualquer entrada (Twitter/X, Discord CDN, Discord Message, URL direta).
+ */
+async function extractUniversalMedia(input) {
+  if (!input || typeof input !== 'string') {
+    throw new Error('URL inválida ou vazia.');
+  }
+
+  const trimmed = input.trim();
+
+  // 1. Link do Discord CDN / Media Proxy
+  if (isDiscordCdnUrl(trimmed)) {
+    return await extractFromDiscordCdn(trimmed);
+  }
+
+  // 2. Link de Mensagem do Discord
+  if (isDiscordMessageUrl(trimmed)) {
+    return await extractFromDiscordMessage(trimmed);
+  }
+
+  // 3. Link ou ID do Twitter/X
+  const tweetId = extractTweetId(trimmed);
+  if (tweetId) {
+    return await extractTweetMedia(trimmed);
+  }
+
+  // 4. Link direto de mídia (MP4, GIF, WEBM, PNG, JPG, etc.)
+  if (isDirectMediaUrl(trimmed)) {
+    return await extractFromDirectUrl(trimmed);
+  }
+
+  throw new Error('Link não suportado. Cole um link do Twitter/X, Discord (CDN/anexo) ou link direto de vídeo/imagem.');
+}
+
+// =============================================================================
 // DOWNLOAD DE MÍDIA UNIFICADO (BYPASS CORS)
 // =============================================================================
 
@@ -433,7 +652,21 @@ async function fetchMediaAsBase64(mediaUrl) {
   }
 
   const base64 = btoa(binary);
-  const mimeType = res.headers.get('Content-Type') || (mediaUrl.endsWith('.png') ? 'image/png' : 'video/mp4');
+  let mimeType = res.headers.get('Content-Type') || '';
+  if (!mimeType || mimeType === 'application/octet-stream') {
+    const ext = getUrlExtension(mediaUrl);
+    const mimeMap = {
+      mp4: 'video/mp4',
+      webm: 'video/webm',
+      mov: 'video/quicktime',
+      gif: 'image/gif',
+      png: 'image/png',
+      jpg: 'image/jpeg',
+      jpeg: 'image/jpeg',
+      webp: 'image/webp'
+    };
+    mimeType = mimeMap[ext] || 'video/mp4';
+  }
   return `data:${mimeType};base64,${base64}`;
 }
 
@@ -448,7 +681,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   const { action, payload } = message;
 
   if (action === 'EXTRACT_MEDIA') {
-    extractTweetMedia(payload.tweetUrl)
+    const targetUrl = payload.url || payload.tweetUrl;
+    extractUniversalMedia(targetUrl)
       .then(data => {
         sendResponse({ success: true, data });
       })
@@ -478,4 +712,4 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   return false;
 });
 
-console.log('[LeaFFMPEG] Service Worker inicializado com suporte a Vídeos, GIFs e Imagens.');
+console.log('[LeaFFMPEG] Service Worker inicializado com suporte a Vídeos, GIFs e Imagens (Twitter & Discord).');
