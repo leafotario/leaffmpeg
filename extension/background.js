@@ -490,11 +490,7 @@ async function extractFromDiscordCdn(mediaUrl) {
     source: 'discord',
     id: filename,
     text: filename,
-    author: {
-      name: 'Discord Anexo',
-      screen_name: filename,
-      avatar_url: 'https://cdn.discordapp.com/embed/avatars/0.png'
-    },
+    author: null,
     bestVideoUrl: (isVideo || isGif) ? url : null,
     bestImageUrl: isPhoto ? url : null,
     isGif: isGif,
@@ -572,11 +568,7 @@ async function extractFromDirectUrl(url) {
     source: 'direct',
     id: filename,
     text: filename,
-    author: {
-      name: 'Mídia Direta',
-      screen_name: filename,
-      avatar_url: ''
-    },
+    author: null,
     bestVideoUrl: (isVideo || isGif) ? url : null,
     bestImageUrl: isPhoto ? url : null,
     isGif: isGif,

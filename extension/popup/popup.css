@@ -618,6 +618,19 @@ body {
   border-bottom: 1px solid var(--border-subtle);
 }
 
+.tweet-meta-bar.hidden {
+  display: none !important;
+}
+
+.preview-video-player.hidden,
+.preview-image-player.hidden {
+  display: none !important;
+}
+
+.hidden {
+  display: none !important;
+}
+
 .author-avatar {
   width: 24px;
   height: 24px;

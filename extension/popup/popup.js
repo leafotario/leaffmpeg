@@ -669,6 +669,8 @@ dropzone.addEventListener('drop', (e) => {
 function loadLocalFile(file) {
   resultContainer.classList.remove('visible');
   tweetMetaBar.classList.add('hidden');
+  authorAvatar.src = '';
+  authorAvatar.style.display = 'none';
 
   const blobUrl = URL.createObjectURL(file);
   const isGif = file.type === 'image/gif' || file.name.toLowerCase().endsWith('.gif');
@@ -741,19 +743,23 @@ async function fetchMedia() {
       return;
     }
 
-    // Exibe autor
-    if (data.author && (data.author.name || data.author.screen_name)) {
+    // Exibe barra de informações SOMENTE se a fonte for o Twitter
+    const isTwitter = Boolean(data.source === 'twitter');
+    if (isTwitter && data.author && (data.author.name || data.author.screen_name)) {
       authorName.textContent = data.author.name || 'Twitter User';
       authorHandle.textContent = data.author.screen_name ? `@${data.author.screen_name}` : '';
       if (data.author.avatar_url) {
         authorAvatar.src = data.author.avatar_url;
         authorAvatar.style.display = 'block';
       } else {
+        authorAvatar.src = '';
         authorAvatar.style.display = 'none';
       }
       tweetMetaBar.classList.remove('hidden');
     } else {
       tweetMetaBar.classList.add('hidden');
+      authorAvatar.src = '';
+      authorAvatar.style.display = 'none';
     }
 
     // Monta lista de mídias encontradas (vídeos ou fotos)
@@ -837,6 +843,25 @@ async function fetchMedia() {
 function loadSelectedMedia() {
   const media = activeMediaList[selectedMediaIndex];
   if (!media) return;
+
+  // Garante que a barra de metadados do Twitter só aparece para posts reais do Twitter
+  const isTwitter = Boolean(!media.isLocal && media.tweetData && media.tweetData.source === 'twitter');
+  if (isTwitter && media.tweetData.author && (media.tweetData.author.name || media.tweetData.author.screen_name)) {
+    authorName.textContent = media.tweetData.author.name || 'Twitter User';
+    authorHandle.textContent = media.tweetData.author.screen_name ? `@${media.tweetData.author.screen_name}` : '';
+    if (media.tweetData.author.avatar_url) {
+      authorAvatar.src = media.tweetData.author.avatar_url;
+      authorAvatar.style.display = 'block';
+    } else {
+      authorAvatar.src = '';
+      authorAvatar.style.display = 'none';
+    }
+    tweetMetaBar.classList.remove('hidden');
+  } else {
+    tweetMetaBar.classList.add('hidden');
+    authorAvatar.src = '';
+    authorAvatar.style.display = 'none';
+  }
 
   if (media.type === 'photo') {
     mediaTypeBadge.textContent = 'Imagem';
