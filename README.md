@@ -2,7 +2,7 @@
 
 Extensão de navegador pra converter vídeos, GIFs e imagens do Twitter ou arquivos locais em GIFs perfeitamente otimizados para o **limite de 8MB do Discord**, e com suporte a **Legendas (Captions)** no estilo popular de memes (esmbot).
 
-- # eu sei que o discord aumentou o limite de upload mas eu fiz essa extensão antes desse update
+<small> eu sei que o discord aumentou o limite de upload mas eu fiz essa extensão antes desse update </small>
 
 ---
 
