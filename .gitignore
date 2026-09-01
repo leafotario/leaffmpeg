@@ -1,2 +1,13 @@
-node_modules/
-.env
+# OS generated files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE / Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log

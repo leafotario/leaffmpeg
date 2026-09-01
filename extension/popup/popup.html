@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=400">
+  <title>Discord GIF Machine</title>
+
+  <!-- Estilos locais (CSP-compliant, sem dependência externa) -->
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+
+  <div class="app-wrapper">
+
+    <!-- ====================================================================
+         1. HEADER PRINCIPAL COM STATUS PULSANTE
+         ==================================================================== -->
+    <header class="app-header">
+      <div class="brand-group">
+        <div class="brand-icon-wrapper">
+          <!-- Ícone Sparkle / Play com gradiente -->
+          <svg class="brand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path>
+          </svg>
+        </div>
+        <div class="brand-info">
+          <h1 class="brand-title">
+            Discord <span class="text-gradient">GIF Machine</span>
+          </h1>
+          <p class="brand-tagline">Vídeos, Imagens & Memes para Discord (≤ 8MB)</p>
+        </div>
+      </div>
+    </header>
+
+    <!-- ====================================================================
+         2. OPÇÕES DE ENTRADA (BOTÃO "MAIS OPÇÕES" + DROPDOWN EXPANSÍVEL)
+         ==================================================================== -->
+    <section class="options-accordion-section">
+      <div class="options-header-row">
+        <button type="button" id="moreOptionsToggleBtn" class="btn-more-options" aria-expanded="false" title="Expandir opções manuais de link e arquivo">
+          <div class="more-options-icon-pill">
+            <svg id="moreOptionsSvg" class="svg-icon-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </div>
+          <span id="moreOptionsBtnText">Mais opções</span>
+          <span class="options-sub-tag">Link & Arquivo</span>
+        </button>
+      </div>
+
+      <!-- Dropdown Expansível com barra de URL e Dropzone -->
+      <div id="moreOptionsDropdown" class="more-options-dropdown">
+        <form id="urlForm" class="url-form">
+          <div class="input-pill-container">
+            <div class="input-icon-wrapper">
+              <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+              </svg>
+            </div>
+
+            <input
+              id="tweetUrlInput"
+              type="text"
+              placeholder="Cole o link do post (x.com ou twitter.com)..."
+              class="url-input"
+              autocomplete="off"
+              spellcheck="false"
+            />
+
+            <button type="button" id="pasteBtn" class="btn-paste-pill" title="Colar link da área de transferência">
+              <svg class="btn-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+              </svg>
+              <span>Colar</span>
+            </button>
+
+            <button type="submit" id="fetchBtn" class="btn-fetch-pill">
+              <span>Buscar</span>
+              <svg class="btn-icon-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+                <polyline points="12 5 19 12 12 19"></polyline>
+              </svg>
+            </button>
+          </div>
+        </form>
+
+        <!-- Dropzone Compacta & Upload de Arquivo Local (Vídeos, GIFs e Imagens) -->
+        <div id="dropzone" class="dropzone">
+          <input type="file" id="localFileInput" accept="video/mp4,video/webm,image/gif,image/png,image/jpeg,image/webp" class="hidden-file-input">
+          <label for="localFileInput" class="dropzone-label">
+            <div class="dropzone-icon-wrapper">
+              <svg class="dropzone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+              </svg>
+            </div>
+            <div class="dropzone-text">
+              <span class="dropzone-primary">Arraste um vídeo, GIF ou imagem aqui</span>
+              <span class="dropzone-secondary">ou <span class="highlight-link">clique para selecionar</span> (.mp4, .gif, .png, .jpg, .webp)</span>
+            </div>
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         4. PAINEL DE CONTROLE SECUNDÁRIO (MODO & SELETOR DE VÍDEOS)
+         ==================================================================== -->
+    <section class="control-panel">
+      <!-- Seletor de Modo de Conversão (Segmented Pill Switch) -->
+      <div class="mode-switcher-card">
+        <div class="mode-header">
+          <span class="mode-label">Modo de Compressão:</span>
+          <span id="activeModeBadge" class="badge-mode-pill">Discord (≤ 8MB)</span>
+        </div>
+
+        <div class="segmented-control" role="tablist">
+          <button
+            type="button"
+            id="modeDiscordBtn"
+            class="segmented-btn active"
+            data-mode="discord"
+            role="tab"
+            aria-selected="true"
+          >
+            <svg class="segmented-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 6L6 18"></path>
+              <path d="M6 6l12 12"></path>
+            </svg>
+            <span class="mode-name">Discord</span>
+            <span class="mode-limit">&le; 8 MB</span>
+          </button>
+
+          <button
+            type="button"
+            id="modeStandardBtn"
+            class="segmented-btn"
+            data-mode="standard"
+            role="tab"
+            aria-selected="false"
+          >
+            <svg class="segmented-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+            </svg>
+            <span class="mode-name">Padrão</span>
+            <span class="mode-limit">&le; 20 MB</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Seletor de Múltiplas Mídias (Exibido dinamicamente) -->
+      <div id="mediaSelector" class="media-selector"></div>
+    </section>
+
+    <!-- ====================================================================
+         5. ÁREA DE PREVIEW & GERADOR DE CAPTION
+         ==================================================================== -->
+    <section id="previewContainer" class="preview-section">
+      <div class="section-card">
+
+        <!-- Informações do Autor & Badge do Tipo de Mídia -->
+        <div id="tweetMetaBar" class="tweet-meta-bar hidden">
+          <img id="authorAvatar" class="author-avatar" src="" alt="Avatar">
+          <div class="author-info">
+            <span id="authorName" class="author-name">Nome</span>
+            <span id="authorHandle" class="author-handle">@handle</span>
+          </div>
+          <span id="mediaTypeBadge" class="badge-media-type">Vídeo</span>
+          <span class="badge-source">Twitter/X</span>
+        </div>
+
+        <!-- Video & Live Meme Caption Wrapper -->
+        <div class="video-preview-box">
+          <!-- Live Caption Banner (Fonte Futura Condensed Extra Bold) -->
+          <div id="captionLiveBanner" class="caption-live-banner meme-font"></div>
+
+          <!-- Video Player (para vídeos MP4/WebM) -->
+          <video id="previewVideo" class="preview-video-player" controls loop muted playsinline></video>
+
+          <!-- Image Player (para imagens PNG/JPG/WebP e GIFs) -->
+          <img id="previewImage" class="preview-image-player hidden" alt="Preview da Mídia">
+        </div>
+
+        <!-- Editor de Legenda (Caption Accordion / Pill) -->
+        <div class="caption-manager">
+          <div class="caption-header-row">
+            <button type="button" id="toggleCaptionBtn" class="btn-caption-toggle">
+              <div class="toggle-icon-pill">
+                <svg id="captionToggleSvg" class="svg-icon-toggle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+              </div>
+              <span id="captionBtnText">Adicionar Legenda Meme</span>
+            </button>
+
+            <button type="button" id="clearCaptionBtn" class="btn-clear-caption" title="Remover Legenda">
+              <svg class="btn-icon-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              </svg>
+              <span>Limpar</span>
+            </button>
+          </div>
+
+          <!-- Painel Expansível de Texto da Legenda -->
+          <div id="captionEditorPanel" class="caption-editor-card">
+            <div class="caption-input-wrapper">
+              <textarea
+                id="captionInput"
+                rows="2"
+                placeholder="Digite o texto da legenda clássica de meme..."
+                class="caption-textarea meme-font"
+                maxlength="200"
+              ></textarea>
+              <div class="caption-footer-info">
+                <span></span>
+                <span id="charCount" class="char-count">0/200</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Botão Primário Hero: Ação Inteligente -->
+        <div class="cta-container">
+          <button type="button" id="convertBtn" class="btn-hero-action">
+            <div class="btn-hero-content">
+              <svg id="convertBtnIcon" class="btn-hero-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+              </svg>
+              <span id="convertBtnLabel" class="btn-hero-text">Gerar GIF para Discord</span>
+            </div>
+            <div class="btn-hero-glow"></div>
+          </button>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         6. PROGRESSO VIBRANTE COM TIMER & SHIMMER
+         ==================================================================== -->
+    <section id="progressContainer" class="progress-section">
+      <div class="progress-card">
+        <div class="progress-top-row">
+          <div class="progress-status-group">
+            <div class="progress-spinner"></div>
+            <span id="progressText" class="progress-label">Processando mídia...</span>
+          </div>
+          <div class="progress-meta">
+            <span id="progressTimer" class="progress-timer-pill">0s</span>
+          </div>
+        </div>
+
+        <div class="progress-track-wrapper">
+          <div id="progressBar" class="progress-bar-fill"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         7. CARD DE RESULTADO DO GIF GERADO
+         ==================================================================== -->
+    <section id="resultContainer" class="result-section">
+      <div class="result-card">
+
+        <div class="result-header">
+          <div class="result-title-group">
+            <div class="success-badge-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+            </div>
+            <span class="result-title">GIF Pronto!</span>
+          </div>
+
+          <div class="size-compliance-badge">
+            <span class="size-label">Tamanho:</span>
+            <strong id="gifSizeText" class="size-value">0.0 MB</strong>
+            <span id="gifLimitText" class="size-limit-tag">(&le; 8.0 MB)</span>
+          </div>
+        </div>
+
+        <!-- Visualização do GIF -->
+        <div class="result-media-box">
+          <img id="resultGif" src="" alt="GIF Gerado" class="result-gif-image">
+        </div>
+
+        <!-- Ações do Resultado -->
+        <div class="result-actions-grid">
+          <!-- Botão Primário: Download -->
+          <a id="downloadLink" href="#" download="discord_gif.gif" class="btn-action-pill btn-download">
+            <svg class="btn-pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            <span>Baixar GIF</span>
+          </a>
+
+          <!-- Botão Secundário: Klipy -->
+          <a
+            id="klipyLink"
+            href="https://klipy.com/create"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="btn-action-pill btn-klipy"
+            title="Compartilhar no Klipy"
+          >
+            <svg class="btn-pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="18" cy="5" r="3"></circle>
+              <circle cx="6" cy="12" r="3"></circle>
+              <circle cx="18" cy="19" r="3"></circle>
+              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+              <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+            </svg>
+            <span>Klipy</span>
+          </a>
+        </div>
+
+      </div>
+    </section>
+
+  </div>
+
+  <!-- Biblioteca gifshot (local, CSP-compliant) -->
+  <script src="../lib/gifshot.min.js"></script>
+
+  <!-- Controlador e Lógica do Popup -->
+  <script src="popup.js"></script>
+
+</body>
+</html>
