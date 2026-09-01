@@ -1,6 +1,6 @@
 /**
  * @file popup.js
- * @description Controlador da Interface & Lógica do Discord GIF Machine (Manifest V3).
+ * @description Controlador da Interface & Lógica do LeaFFMPEG (Manifest V3).
  *
  * Funcionalidades:
  *   1. Vídeos MP4/WebM -> GIF otimizado para Discord (≤ 8MB) ou Padrão (≤ 20MB)
@@ -117,9 +117,9 @@ function updateStatusBadge(state, text) {
  */
 function showToast(message, type = 'info') {
   if (type === 'error') {
-    console.error(`[Discord GIF Machine] ${message}`);
+    console.error(`[LeaFFMPEG] ${message}`);
   } else {
-    console.log(`[Discord GIF Machine] [${type.toUpperCase()}] ${message}`);
+    console.log(`[LeaFFMPEG] [${type.toUpperCase()}] ${message}`);
   }
 }
 
@@ -1090,7 +1090,7 @@ function displayGifResult(blob, maxLimitLabel) {
   gifLimitText.textContent = `(≤ ${maxLimitLabel})`;
 
   downloadLink.href = url;
-  downloadLink.download = `discord_gif_${Date.now()}.gif`;
+  downloadLink.download = `leaffmpeg_${Date.now()}.gif`;
 
   resultContainer.classList.add('visible');
   resultContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -1101,7 +1101,7 @@ function displayGifResult(blob, maxLimitLabel) {
 // =============================================================================
 
 document.addEventListener('DOMContentLoaded', async () => {
-  console.log('[Discord GIF Machine] Popup inicializado.');
+  console.log('[LeaFFMPEG] Popup inicializado.');
   updateStatusBadge('ready', 'Pronto');
 
   try {

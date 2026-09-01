@@ -478,4 +478,4 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   return false;
 });
 
-console.log('[Discord GIF Machine] Service Worker inicializado com suporte a Vídeos, GIFs e Imagens.');
+console.log('[LeaFFMPEG] Service Worker inicializado com suporte a Vídeos, GIFs e Imagens.');

@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Discord GIF Machine",
+  "name": "LeaFFMPEG",
   "version": "1.0.0",
   "description": "Converta vídeos e tweets do Twitter/X em GIFs otimizados (≤ 8MB) para envio no Discord, com suporte a legendas estilo meme.",
 
@@ -17,7 +17,7 @@
       "48": "assets/icon-48.png",
       "128": "assets/icon-128.png"
     },
-    "default_title": "Discord GIF Machine"
+    "default_title": "LeaFFMPEG"
   },
 
   "background": {
