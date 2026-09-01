@@ -64,6 +64,22 @@ const captionEditorPanel = document.getElementById('captionEditorPanel');
 const captionInput = document.getElementById('captionInput');
 const charCount = document.getElementById('charCount');
 
+// Destroyer Controls (Qualidade Toda Cagada / Bitcrush Meme)
+const toggleDestroyerBtn = document.getElementById('toggleDestroyerBtn');
+const resetDestroyerBtn = document.getElementById('resetDestroyerBtn');
+const destroyerBtnText = document.getElementById('destroyerBtnText');
+const destroyerBadge = document.getElementById('destroyerBadge');
+const destroyerPanel = document.getElementById('destroyerPanel');
+const jpegCrunchSlider = document.getElementById('jpegCrunchSlider');
+const jpegCrunchVal = document.getElementById('jpegCrunchVal');
+const pixelateSlider = document.getElementById('pixelateSlider');
+const pixelateVal = document.getElementById('pixelateVal');
+const bitcrushSlider = document.getElementById('bitcrushSlider');
+const bitcrushVal = document.getElementById('bitcrushVal');
+const deepFriedSlider = document.getElementById('deepFriedSlider');
+const deepFriedVal = document.getElementById('deepFriedVal');
+const presetButtons = document.querySelectorAll('.btn-preset-pill');
+
 // Hero Action Button
 const convertBtn = document.getElementById('convertBtn');
 const convertBtnLabel = document.getElementById('convertBtnLabel');
@@ -91,8 +107,24 @@ let activeMediaList = [];
 let selectedMediaIndex = 0;
 let currentGifBlob = null;
 let isCaptionActive = false;
+let isDestroyerActive = false;
 let timerInterval = null;
 let timerCount = 0;
+
+// Configurações de destruição de qualidade
+const destructionSettings = {
+  jpegCrunch: 0,
+  pixelate: 1,
+  bitcrush: 0,
+  deepFried: 0
+};
+
+function isDestructionActive() {
+  return destructionSettings.jpegCrunch > 0 ||
+         destructionSettings.pixelate > 1 ||
+         destructionSettings.bitcrush > 0 ||
+         destructionSettings.deepFried > 0;
+}
 
 // =============================================================================
 // SISTEMA DE STATUS
@@ -338,10 +370,11 @@ function updateLiveCaptionPreview() {
   }
 }
 
-/** Atualiza dinamicamente o texto do botão Hero com base no tipo de mídia e legenda */
+/** Atualiza dinamicamente o texto do botão Hero com base no tipo de mídia, legenda e destruição */
 function updateHeroButtonLabel() {
   const media = activeMediaList[selectedMediaIndex];
   const hasCaption = captionInput.value.trim().length > 0;
+  const hasDestruct = isDestructionActive();
   const maxLimitLabel = currentMode === 'discord' ? '8MB' : '20MB';
 
   if (!media) {
@@ -349,23 +382,188 @@ function updateHeroButtonLabel() {
     return;
   }
 
-  if (media.type === 'photo') {
-    convertBtnLabel.textContent = hasCaption
-      ? 'Gerar GIF com Legenda'
-      : 'Converter Imagem para GIF Estático';
+  if (hasDestruct && hasCaption) {
+    convertBtnLabel.textContent = 'Gerar GIF Meme Destruído 🔥';
+  } else if (hasDestruct) {
+    convertBtnLabel.textContent = 'Gerar GIF Destruído 🔥';
+  } else if (hasCaption) {
+    convertBtnLabel.textContent = 'Gerar GIF com Legenda';
+  } else if (media.type === 'photo') {
+    convertBtnLabel.textContent = 'Converter Imagem para GIF Estático';
   } else if (media.type === 'gif') {
-    if (media.fileSize && media.fileSize <= (LIMITS[currentMode] || LIMITS.discord) && !hasCaption) {
+    if (media.fileSize && media.fileSize <= (LIMITS[currentMode] || LIMITS.discord)) {
       convertBtnLabel.textContent = `Baixar GIF Original (≤${maxLimitLabel})`;
     } else {
-      convertBtnLabel.textContent = hasCaption
-        ? 'Gerar GIF com Legenda'
-        : `Otimizar GIF para Discord (≤${maxLimitLabel})`;
+      convertBtnLabel.textContent = `Otimizar GIF para Discord (≤${maxLimitLabel})`;
     }
   } else {
-    convertBtnLabel.textContent = hasCaption
-      ? 'Gerar GIF com Legenda'
-      : `Gerar GIF para Discord (≤${maxLimitLabel})`;
+    convertBtnLabel.textContent = `Gerar GIF para Discord (≤${maxLimitLabel})`;
   }
+}
+
+// =============================================================================
+// GERENCIADOR DE DESTRUIÇÃO DE QUALIDADE (SLIDERS & PRESETS)
+// =============================================================================
+
+function updateDestroyerUI() {
+  if (isDestroyerActive) {
+    destroyerPanel.classList.add('visible');
+    toggleDestroyerBtn.classList.add('active');
+    destroyerBtnText.textContent = 'Ocultar Controles';
+  } else {
+    destroyerPanel.classList.remove('visible');
+    toggleDestroyerBtn.classList.remove('active');
+    destroyerBtnText.textContent = 'Destruir Qualidade';
+  }
+}
+
+function syncSlidersFromSettings() {
+  jpegCrunchSlider.value = destructionSettings.jpegCrunch;
+  jpegCrunchVal.textContent = `${destructionSettings.jpegCrunch}%`;
+
+  pixelateSlider.value = destructionSettings.pixelate;
+  pixelateVal.textContent = destructionSettings.pixelate === 1 ? '1x (Normal)' : `${destructionSettings.pixelate}x`;
+
+  bitcrushSlider.value = destructionSettings.bitcrush;
+  bitcrushVal.textContent = `${destructionSettings.bitcrush}%`;
+
+  deepFriedSlider.value = destructionSettings.deepFried;
+  deepFriedVal.textContent = `${destructionSettings.deepFried}%`;
+
+  onDestructionChanged();
+}
+
+function resetDestructionSettings() {
+  destructionSettings.jpegCrunch = 0;
+  destructionSettings.pixelate = 1;
+  destructionSettings.bitcrush = 0;
+  destructionSettings.deepFried = 0;
+  syncSlidersFromSettings();
+}
+
+function applyPreset(preset) {
+  if (preset === 'light') {
+    destructionSettings.jpegCrunch = 45;
+    destructionSettings.pixelate = 2;
+    destructionSettings.bitcrush = 20;
+    destructionSettings.deepFried = 15;
+  } else if (preset === 'potato') {
+    destructionSettings.jpegCrunch = 75;
+    destructionSettings.pixelate = 5;
+    destructionSettings.bitcrush = 45;
+    destructionSettings.deepFried = 35;
+  } else if (preset === 'nuclear') {
+    destructionSettings.jpegCrunch = 100;
+    destructionSettings.pixelate = 9;
+    destructionSettings.bitcrush = 75;
+    destructionSettings.deepFried = 70;
+  }
+  syncSlidersFromSettings();
+}
+
+function onDestructionChanged() {
+  const active = isDestructionActive();
+  destroyerBadge.classList.toggle('hidden', !active);
+  resetDestroyerBtn.classList.toggle('visible', active);
+  updateHeroButtonLabel();
+  updateLiveDestructionPreview();
+}
+
+let previewDebounceTimer = null;
+function updateLiveDestructionPreview() {
+  const media = activeMediaList[selectedMediaIndex];
+  if (!media) return;
+
+  if (media.type === 'photo' || (media.type === 'gif' && media.isRealGif)) {
+    clearTimeout(previewDebounceTimer);
+    previewDebounceTimer = setTimeout(async () => {
+      if (!isDestructionActive()) {
+        previewImage.src = media.url;
+        previewImage.style.filter = '';
+        previewImage.style.imageRendering = '';
+        return;
+      }
+
+      try {
+        const cleanBlobUrl = await getCORSMediaBlobUrl(media.url);
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.src = cleanBlobUrl;
+        await new Promise((res, rej) => {
+          img.onload = res;
+          img.onerror = rej;
+        });
+
+        const canvas = document.createElement('canvas');
+        const naturalW = img.naturalWidth || 400;
+        const naturalH = img.naturalHeight || 300;
+        const targetW = Math.min(naturalW, 480);
+        const targetH = Math.round(targetW * (naturalH / naturalW));
+        canvas.width = targetW;
+        canvas.height = targetH;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, targetW, targetH);
+
+        await applyQualityDestruction(canvas, destructionSettings);
+        previewImage.src = canvas.toDataURL('image/png');
+      } catch (err) {
+        console.warn('[Destruction] Erro no preview:', err);
+      }
+    }, 60);
+  } else {
+    // Para vídeo: aplica filtros CSS instantâneos
+    if (!isDestructionActive()) {
+      previewVideo.style.filter = '';
+      previewVideo.style.imageRendering = '';
+    } else {
+      const contrast = 1 + (destructionSettings.deepFried / 100) * 2.2;
+      const saturate = 1 + (destructionSettings.deepFried / 100) * 3.5;
+      const brightness = 1 + (destructionSettings.deepFried / 100) * 0.25;
+      previewVideo.style.filter = `contrast(${contrast}) saturate(${saturate}) brightness(${brightness})`;
+      previewVideo.style.imageRendering = destructionSettings.pixelate > 1 ? 'pixelated' : '';
+    }
+  }
+}
+
+function setupDestroyerEvents() {
+  toggleDestroyerBtn.addEventListener('click', () => {
+    isDestroyerActive = !isDestroyerActive;
+    updateDestroyerUI();
+  });
+
+  resetDestroyerBtn.addEventListener('click', () => {
+    resetDestructionSettings();
+  });
+
+  jpegCrunchSlider.addEventListener('input', (e) => {
+    destructionSettings.jpegCrunch = parseInt(e.target.value, 10);
+    jpegCrunchVal.textContent = `${destructionSettings.jpegCrunch}%`;
+    onDestructionChanged();
+  });
+
+  pixelateSlider.addEventListener('input', (e) => {
+    destructionSettings.pixelate = parseInt(e.target.value, 10);
+    pixelateVal.textContent = destructionSettings.pixelate === 1 ? '1x (Normal)' : `${destructionSettings.pixelate}x`;
+    onDestructionChanged();
+  });
+
+  bitcrushSlider.addEventListener('input', (e) => {
+    destructionSettings.bitcrush = parseInt(e.target.value, 10);
+    bitcrushVal.textContent = `${destructionSettings.bitcrush}%`;
+    onDestructionChanged();
+  });
+
+  deepFriedSlider.addEventListener('input', (e) => {
+    destructionSettings.deepFried = parseInt(e.target.value, 10);
+    deepFriedVal.textContent = `${destructionSettings.deepFried}%`;
+    onDestructionChanged();
+  });
+
+  presetButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      applyPreset(btn.dataset.preset);
+    });
+  });
 }
 
 // =============================================================================
@@ -673,6 +871,7 @@ function loadSelectedMedia() {
   previewContainer.classList.add('visible');
   resultContainer.classList.remove('visible');
   updateLiveCaptionPreview();
+  updateLiveDestructionPreview();
   updateHeroButtonLabel();
 }
 
@@ -789,6 +988,98 @@ function computeCaptionLayout(text, width) {
 }
 
 // =============================================================================
+// MOTOR DE DESTRUIÇÃO DE QUALIDADE (JPEG CRUNCH, PIXELATE, BITCRUSH, DEEP FRIED)
+// =============================================================================
+
+/**
+ * Aplica os efeitos de degradação de qualidade configurados pelo usuário.
+ * @param {HTMLCanvasElement} canvas
+ * @param {Object} settings
+ * @returns {Promise<void>}
+ */
+async function applyQualityDestruction(canvas, settings) {
+  const { jpegCrunch = 0, pixelate = 1, bitcrush = 0, deepFried = 0 } = settings;
+  if (jpegCrunch <= 0 && pixelate <= 1 && bitcrush <= 0 && deepFried <= 0) {
+    return;
+  }
+
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width;
+  const h = canvas.height;
+
+  // 1. Deep Fried: Contraste agressivo e saturação estourada de meme
+  if (deepFried > 0) {
+    const contrast = 1 + (deepFried / 100) * 2.5;
+    const saturate = 1 + (deepFried / 100) * 3.5;
+    const brightness = 1 + (deepFried / 100) * 0.25;
+
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = w;
+    tempCanvas.height = h;
+    const tCtx = tempCanvas.getContext('2d');
+    tCtx.filter = `contrast(${contrast}) saturate(${saturate}) brightness(${brightness})`;
+    tCtx.drawImage(canvas, 0, 0);
+
+    ctx.clearRect(0, 0, w, h);
+    ctx.drawImage(tempCanvas, 0, 0);
+  }
+
+  // 2. Pixelização / Downscale (Resolução de Batata)
+  if (pixelate > 1) {
+    const factor = Math.max(1, Math.round(pixelate));
+    const smallW = Math.max(4, Math.round(w / factor));
+    const smallH = Math.max(4, Math.round(h / factor));
+
+    const smallCanvas = document.createElement('canvas');
+    smallCanvas.width = smallW;
+    smallCanvas.height = smallH;
+    const sCtx = smallCanvas.getContext('2d');
+    sCtx.imageSmoothingEnabled = false;
+    sCtx.drawImage(canvas, 0, 0, smallW, smallH);
+
+    ctx.imageSmoothingEnabled = false;
+    ctx.clearRect(0, 0, w, h);
+    ctx.drawImage(smallCanvas, 0, 0, smallW, smallH, 0, 0, w, h);
+    ctx.imageSmoothingEnabled = true;
+  }
+
+  // 3. Bitcrush (Quantização de cores em bandas duras)
+  if (bitcrush > 0) {
+    const imgData = ctx.getImageData(0, 0, w, h);
+    const d = imgData.data;
+
+    // Níveis de cores: de 32 down to 3
+    const numLevels = Math.max(3, Math.round(32 - (bitcrush / 100) * 29));
+    const step = 255 / (numLevels - 1);
+
+    for (let i = 0; i < d.length; i += 4) {
+      d[i] = Math.round(Math.round(d[i] / step) * step);         // R
+      d[i + 1] = Math.round(Math.round(d[i + 1] / step) * step); // G
+      d[i + 2] = Math.round(Math.round(d[i + 2] / step) * step); // B
+    }
+    ctx.putImageData(imgData, 0, 0);
+  }
+
+  // 4. Compressão JPEG Extrema (Artefatos de bloco e ruído)
+  if (jpegCrunch > 0) {
+    const quality = Math.max(0.01, 0.22 - (jpegCrunch / 100) * 0.21);
+    const passes = jpegCrunch > 60 ? 2 : 1;
+
+    for (let p = 0; p < passes; p++) {
+      const dataUrl = canvas.toDataURL('image/jpeg', quality);
+      const img = new Image();
+      img.src = dataUrl;
+      await new Promise(r => {
+        img.onload = r;
+        img.onerror = r;
+      });
+      ctx.clearRect(0, 0, w, h);
+      ctx.drawImage(img, 0, 0);
+    }
+  }
+}
+
+// =============================================================================
 // CONVERSÃO & PROCESSAMENTO INTELIGENTE DE GIFS E IMAGENS
 // =============================================================================
 
@@ -797,7 +1088,7 @@ convertBtn.addEventListener('click', startConversion);
 /**
  * Pipeline principal de geração / otimização de GIF:
  *   - Imagens -> converte para GIF estático (com ou sem legenda)
- *   - GIFs <= 8MB sem legenda -> libera direto sem recompressão
+ *   - GIFs <= 8MB sem legenda e sem destruição -> libera direto sem recompressão
  *   - GIFs > 8MB ou Vídeos -> comprime via gifshot com limite garantido
  */
 async function startConversion() {
@@ -813,9 +1104,9 @@ async function startConversion() {
   const captionText = captionInput.value.trim();
   const hasCaption = captionText.length > 0;
 
-  // CASO 1: É um arquivo GIF real E já é <= 8MB E NÃO tem legenda
+  // CASO 1: É um arquivo GIF real E já é <= 8MB E NÃO tem legenda E NÃO tem destruição
   // Não precisa de conversão pesada! Entrega o GIF original diretamente.
-  if (media.isRealGif && !hasCaption) {
+  if (media.isRealGif && !hasCaption && !isDestructionActive()) {
     try {
       let gifBlob = media.blob;
       if (!gifBlob) {
@@ -921,6 +1212,12 @@ async function startConversion() {
         ctx.drawImage(img, 0, 0, targetWidth, renderImgHeight);
       }
 
+      // Aplica destruição de qualidade na imagem se ativo
+      if (isDestructionActive()) {
+        progressText.textContent = 'Destruindo qualidade da imagem...';
+        await applyQualityDestruction(frameCanvas, destructionSettings);
+      }
+
       progressBar.style.width = '75%';
       progressText.textContent = 'Codificando arquivo GIF...';
 
@@ -982,7 +1279,7 @@ async function startConversion() {
         currentMode === 'discord' ? 70 : 110
       ));
 
-      if (!hasCaption) {
+      if (!hasCaption && !isDestructionActive()) {
         finalObj = await new Promise((resolve, reject) => {
           gifshot.createGIF({
             video: [cleanBlobUrl],
@@ -1005,12 +1302,19 @@ async function startConversion() {
           });
         });
       } else {
-        progressText.textContent = `Desenhando legenda meme no GIF (Passe ${pass})...`;
+        if (hasCaption && isDestructionActive()) {
+          progressText.textContent = `Renderizando meme destruído (Passe ${pass})...`;
+        } else if (isDestructionActive()) {
+          progressText.textContent = `Destruindo frames do vídeo (Passe ${pass})...`;
+        } else {
+          progressText.textContent = `Desenhando legenda meme no GIF (Passe ${pass})...`;
+        }
 
-        const captionLayout = computeCaptionLayout(captionText, targetWidth);
+        const captionLayout = hasCaption ? computeCaptionLayout(captionText, targetWidth) : null;
+        const captionHeight = captionLayout ? captionLayout.captionHeight : 0;
         const videoRatio = previewVideo.videoHeight / (previewVideo.videoWidth || 1) || 0.5625;
         const videoRenderHeight = Math.round(targetWidth * videoRatio);
-        const totalCanvasHeight = videoRenderHeight + captionLayout.captionHeight;
+        const totalCanvasHeight = videoRenderHeight + captionHeight;
 
         const offscreenVideo = document.createElement('video');
         offscreenVideo.src = cleanBlobUrl;
@@ -1044,22 +1348,32 @@ async function startConversion() {
             offscreenVideo.addEventListener('seeked', onSeek);
           });
 
-          // Banner de legenda
-          ctx.fillStyle = '#ffffff';
-          ctx.fillRect(0, 0, targetWidth, captionLayout.captionHeight);
+          if (hasCaption) {
+            // Banner de legenda
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, targetWidth, captionHeight);
 
-          ctx.fillStyle = '#000000';
-          ctx.font = `bold ${captionLayout.fontSize}px "Futura Condensed Extra Bold", "Futura", -apple-system, sans-serif`;
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
+            ctx.fillStyle = '#000000';
+            ctx.font = `bold ${captionLayout.fontSize}px "Futura Condensed Extra Bold", "Futura", -apple-system, sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
 
-          const startY = captionLayout.paddingY + (captionLayout.lineHeight / 2);
-          captionLayout.lines.forEach((line, i) => {
-            ctx.fillText(line, targetWidth / 2, startY + (i * captionLayout.lineHeight));
-          });
+            const startY = captionLayout.paddingY + (captionLayout.lineHeight / 2);
+            captionLayout.lines.forEach((line, i) => {
+              ctx.fillText(line, targetWidth / 2, startY + (i * captionLayout.lineHeight));
+            });
 
-          // Frame do vídeo
-          ctx.drawImage(offscreenVideo, 0, captionLayout.captionHeight, targetWidth, videoRenderHeight);
+            // Frame do vídeo abaixo da legenda
+            ctx.drawImage(offscreenVideo, 0, captionHeight, targetWidth, videoRenderHeight);
+          } else {
+            // Apenas o frame do vídeo
+            ctx.drawImage(offscreenVideo, 0, 0, targetWidth, videoRenderHeight);
+          }
+
+          // Aplica destruição de qualidade no frame se ativo!
+          if (isDestructionActive()) {
+            await applyQualityDestruction(frameCanvas, destructionSettings);
+          }
 
           capturedFrames.push(frameCanvas.toDataURL('image/png'));
           progressBar.style.width = `${15 + Math.round((f / numFrames) * 50)}%`;
@@ -1189,6 +1503,7 @@ function scanDiscordPageForMedia() {
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('[LeaFFMPEG] Popup inicializado.');
   updateStatusBadge('ready', 'Pronto');
+  setupDestroyerEvents();
 
   try {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });

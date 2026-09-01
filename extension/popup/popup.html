@@ -221,6 +221,82 @@
           </div>
         </div>
 
+        <!-- Destruir Qualidade (Quality Destroyer & Bitcrush Meme Sliders) -->
+        <div class="destroyer-manager">
+          <div class="destroyer-header-row">
+            <button type="button" id="toggleDestroyerBtn" class="btn-destroyer-toggle">
+              <div class="toggle-icon-pill destroyer-icon-pill">
+                <svg id="destroyerToggleSvg" class="svg-icon-toggle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                </svg>
+              </div>
+              <span id="destroyerBtnText">Destruir Qualidade</span>
+              <span id="destroyerBadge" class="destroyer-active-badge hidden">Ativo</span>
+            </button>
+
+            <button type="button" id="resetDestroyerBtn" class="btn-clear-destroyer" title="Resetar Efeitos de Qualidade">
+              <svg class="btn-icon-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                <path d="M3 3v5h5"></path>
+              </svg>
+              <span>Resetar</span>
+            </button>
+          </div>
+
+          <!-- Painel Expansível de Sliders de Destruição -->
+          <div id="destroyerPanel" class="destroyer-editor-card">
+            <div class="destroyer-sliders-box">
+              
+              <!-- Slider 1: Compressão JPEG / Crunch -->
+              <div class="slider-group">
+                <div class="slider-label-row">
+                  <span class="slider-title">Compressão Extrema (JPEG Zap)</span>
+                  <span id="jpegCrunchVal" class="slider-val-badge">0%</span>
+                </div>
+                <input type="range" id="jpegCrunchSlider" min="0" max="100" value="0" step="1" class="destroyer-slider">
+              </div>
+
+              <!-- Slider 2: Pixelização (Resolução Batata) -->
+              <div class="slider-group">
+                <div class="slider-label-row">
+                  <span class="slider-title">Pixelização (Batata 144p)</span>
+                  <span id="pixelateVal" class="slider-val-badge">1x (Normal)</span>
+                </div>
+                <input type="range" id="pixelateSlider" min="1" max="16" value="1" step="1" class="destroyer-slider">
+              </div>
+
+              <!-- Slider 3: Bitcrush (Redução de Cores) -->
+              <div class="slider-group">
+                <div class="slider-label-row">
+                  <span class="slider-title">Bitcrush (Cores Estragadas)</span>
+                  <span id="bitcrushVal" class="slider-val-badge">0%</span>
+                </div>
+                <input type="range" id="bitcrushSlider" min="0" max="100" value="0" step="1" class="destroyer-slider">
+              </div>
+
+              <!-- Slider 4: Deep Fried (Contraste/Fritura) -->
+              <div class="slider-group">
+                <div class="slider-label-row">
+                  <span class="slider-title">Deep Fried (Fritura Extrema)</span>
+                  <span id="deepFriedVal" class="slider-val-badge">0%</span>
+                </div>
+                <input type="range" id="deepFriedSlider" min="0" max="100" value="0" step="1" class="destroyer-slider">
+              </div>
+
+              <!-- Presets Rápidos -->
+              <div class="destroyer-presets-row">
+                <span class="presets-label">Presets:</span>
+                <div class="presets-buttons-group">
+                  <button type="button" class="btn-preset-pill" data-preset="light">Zap (Leve)</button>
+                  <button type="button" class="btn-preset-pill" data-preset="potato">144p (Médio)</button>
+                  <button type="button" class="btn-preset-pill" data-preset="nuclear">Nuclear 🔥</button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
         <!-- Botão Primário Hero: Ação Inteligente -->
         <div class="cta-container">
           <button type="button" id="convertBtn" class="btn-hero-action">

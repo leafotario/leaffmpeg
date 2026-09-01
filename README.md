@@ -28,6 +28,7 @@ Extensão de navegador pra converter vídeos, GIFs e imagens do Twitter, Discord
 - **Otimização Inteligente para Discord**: Garante que o GIF gerado respeite estritamente o limite de **8.0 MB** para envio no Discord sem Nitro.
 - **Modo Padrão (≤ 20MB)**: Para quem deseja maior resolução/taxa de quadros compatível com limites maiores.
 - **Legendas Meme em Tempo Real**: Adicione barras de legenda superior clássicas com a fonte **Futura Condensed Extra Bold**.
+- **Modo "Destruir Qualidade" (Meme Crunch & Bitcrush)**: Sliders configuráveis para arrancar a qualidade da imagem/vídeo em níveis astronômicos — compressão JPEG estilo zap, pixelização 144p, bitcrush de cores e deep fried para criar memes com a qualidade toda estragada.
 - **Processamento 100% Client-Side**: As conversões rodam diretamente no navegador usando o motor `gifshot`, sem depender de servidores externos.
 
 ---
