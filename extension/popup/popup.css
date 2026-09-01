@@ -148,6 +148,13 @@ body {
   height: 16px;
 }
 
+.brand-icon-img {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  object-fit: cover;
+}
+
 .brand-info {
   display: flex;
   flex-direction: column;
