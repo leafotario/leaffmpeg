@@ -1,8 +1,8 @@
 # <img src="extension/assets/icon-48.png" width="28" height="28" valign="middle" alt="LeaFFMPEG"> LeaFFMPEG
 
-Extensão de navegador pra converter vídeos, GIFs e imagens do Twitter/X, Discord (links e anexos) ou arquivos locais em GIFs perfeitamente otimizados para o **limite de 8MB do Discord**, e com suporte a **Legendas (Captions)** no estilo popular de memes (esmbot).
+Extensão de navegador pra converter vídeos, GIFs e imagens do Twitter, Discord ou arquivos locais em GIFs perfeitamente otimizados para o **limite de 8MB do Discord**, e com suporte a **Legendas (Captions)** no estilo popular de memes (esmbot).
 
-<small> eu sei que o discord aumentou o limite de upload mas eu fiz essa extensão antes desse update </small>
+(eu sei que o discord aumentou o limite de upload mas eu fiz essa extensão antes desse update)
 
 ---
 
