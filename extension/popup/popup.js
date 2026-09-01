@@ -79,6 +79,10 @@ const deepFriedSlider = document.getElementById('deepFriedSlider');
 const deepFriedVal = document.getElementById('deepFriedVal');
 const presetButtons = document.querySelectorAll('.btn-preset-pill');
 
+// Format Selector (GIF / PNG)
+const formatGifBtn = document.getElementById('formatGifBtn');
+const formatPngBtn = document.getElementById('formatPngBtn');
+
 // Hero Action Button
 const convertBtn = document.getElementById('convertBtn');
 const convertBtnLabel = document.getElementById('convertBtnLabel');
@@ -102,6 +106,7 @@ const klipyLink = document.getElementById('klipyLink');
 // =============================================================================
 
 let currentMode = 'discord'; // 'discord' ou 'standard'
+let outputFormat = 'gif'; // 'gif' ou 'png'
 let activeMediaList = [];
 let selectedMediaIndex = 0;
 let currentGifBlob = null;
@@ -369,9 +374,27 @@ function updateLiveCaptionPreview() {
   }
 }
 
-/** O botão de conversão sempre exibe estritamente "Exportar GIF" */
+/** O botão de conversão exibe "Exportar GIF" ou "Exportar PNG" com base no formato selecionado */
 function updateHeroButtonLabel() {
-  convertBtnLabel.textContent = 'Exportar GIF';
+  convertBtnLabel.textContent = outputFormat === 'png' ? 'Exportar PNG' : 'Exportar GIF';
+}
+
+function setupFormatSelectorEvents() {
+  if (!formatGifBtn || !formatPngBtn) return;
+
+  formatGifBtn.addEventListener('click', () => {
+    outputFormat = 'gif';
+    formatGifBtn.classList.add('active');
+    formatPngBtn.classList.remove('active');
+    updateHeroButtonLabel();
+  });
+
+  formatPngBtn.addEventListener('click', () => {
+    outputFormat = 'png';
+    formatPngBtn.classList.add('active');
+    formatGifBtn.classList.remove('active');
+    updateHeroButtonLabel();
+  });
 }
 
 // =============================================================================
@@ -1101,9 +1124,9 @@ async function startConversion() {
   const captionText = captionInput.value.trim();
   const hasCaption = captionText.length > 0;
 
-  // CASO 1: É um arquivo GIF real E já é <= 8MB E NÃO tem legenda E NÃO tem destruição
+  // CASO 1: É um arquivo GIF real E já é <= 8MB E NÃO tem legenda E NÃO tem destruição E saída é GIF
   // Não precisa de conversão pesada! Entrega o GIF original diretamente.
-  if (media.isRealGif && !hasCaption && !isDestructionActive()) {
+  if (outputFormat === 'gif' && media.isRealGif && !hasCaption && !isDestructionActive()) {
     try {
       let gifBlob = media.blob;
       if (!gifBlob) {
@@ -1123,7 +1146,8 @@ async function startConversion() {
     }
   }
 
-  if (!window.gifshot) {
+  // Se saída for GIF, valida motor gifshot
+  if (outputFormat === 'gif' && !window.gifshot) {
     showToast('Aguarde o carregamento do motor gifshot e tente novamente.', 'warning');
     return;
   }
@@ -1150,6 +1174,135 @@ async function startConversion() {
     }
 
     const cleanBlobUrl = await getCORSMediaBlobUrl(media.url);
+
+    // =========================================================================
+    // EXPORTAÇÃO EM FORMATO PNG (IMAGEM ESTÁTICA COM LEGENDA E/OU DESTRUIÇÃO)
+    // =========================================================================
+    if (outputFormat === 'png') {
+      progressText.textContent = 'Renderizando imagem PNG...';
+      progressBar.style.width = '60%';
+
+      let frameCanvas;
+
+      if (media.type === 'photo') {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.src = cleanBlobUrl;
+
+        await new Promise((res, rej) => {
+          img.onload = res;
+          img.onerror = () => rej(new Error('Falha ao carregar imagem para exportação PNG.'));
+        });
+
+        const naturalW = img.naturalWidth || img.width || 600;
+        const naturalH = img.naturalHeight || img.height || 400;
+        const targetWidth = Math.min(naturalW, currentMode === 'discord' ? 800 : 1200);
+        const imgRatio = naturalH / naturalW;
+        const renderImgHeight = Math.round(targetWidth * imgRatio);
+
+        let totalHeight = renderImgHeight;
+        let captionLayout = null;
+
+        if (hasCaption) {
+          captionLayout = computeCaptionLayout(captionText, targetWidth);
+          totalHeight = renderImgHeight + captionLayout.captionHeight;
+        }
+
+        frameCanvas = document.createElement('canvas');
+        frameCanvas.width = targetWidth;
+        frameCanvas.height = totalHeight;
+        const ctx = frameCanvas.getContext('2d');
+
+        if (hasCaption) {
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, targetWidth, captionLayout.captionHeight);
+
+          ctx.fillStyle = '#000000';
+          ctx.font = `bold ${captionLayout.fontSize}px "Futura Condensed Extra Bold", "Futura", -apple-system, sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+
+          const startY = captionLayout.paddingY + (captionLayout.lineHeight / 2);
+          captionLayout.lines.forEach((line, i) => {
+            ctx.fillText(line, targetWidth / 2, startY + (i * captionLayout.lineHeight));
+          });
+
+          ctx.drawImage(img, 0, captionLayout.captionHeight, targetWidth, renderImgHeight);
+        } else {
+          ctx.drawImage(img, 0, 0, targetWidth, renderImgHeight);
+        }
+      } else {
+        // Vídeo ou GIF animado: captura o frame
+        const offscreenVideo = document.createElement('video');
+        offscreenVideo.src = cleanBlobUrl;
+        offscreenVideo.muted = true;
+        offscreenVideo.playsInline = true;
+        offscreenVideo.crossOrigin = 'anonymous';
+
+        await new Promise((res, rej) => {
+          offscreenVideo.onloadeddata = res;
+          offscreenVideo.onerror = rej;
+          offscreenVideo.load();
+        });
+
+        const seekTime = (previewVideo && !previewVideo.paused && previewVideo.currentTime) ? previewVideo.currentTime : 0;
+        offscreenVideo.currentTime = seekTime;
+
+        await new Promise(r => {
+          const onSeek = () => {
+            offscreenVideo.removeEventListener('seeked', onSeek);
+            r();
+          };
+          offscreenVideo.addEventListener('seeked', onSeek);
+        });
+
+        const targetWidth = Math.min(offscreenVideo.videoWidth || 600, 1200);
+        const videoRatio = (offscreenVideo.videoHeight / (offscreenVideo.videoWidth || 1)) || 0.5625;
+        const videoRenderHeight = Math.round(targetWidth * videoRatio);
+
+        let totalHeight = videoRenderHeight;
+        let captionLayout = null;
+
+        if (hasCaption) {
+          captionLayout = computeCaptionLayout(captionText, targetWidth);
+          totalHeight = videoRenderHeight + captionLayout.captionHeight;
+        }
+
+        frameCanvas = document.createElement('canvas');
+        frameCanvas.width = targetWidth;
+        frameCanvas.height = totalHeight;
+        const ctx = frameCanvas.getContext('2d');
+
+        if (hasCaption) {
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, targetWidth, captionLayout.captionHeight);
+
+          ctx.fillStyle = '#000000';
+          ctx.font = `bold ${captionLayout.fontSize}px "Futura Condensed Extra Bold", "Futura", -apple-system, sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+
+          const startY = captionLayout.paddingY + (captionLayout.lineHeight / 2);
+          captionLayout.lines.forEach((line, i) => {
+            ctx.fillText(line, targetWidth / 2, startY + (i * captionLayout.lineHeight));
+          });
+
+          ctx.drawImage(offscreenVideo, 0, captionLayout.captionHeight, targetWidth, videoRenderHeight);
+        } else {
+          ctx.drawImage(offscreenVideo, 0, 0, targetWidth, videoRenderHeight);
+        }
+      }
+
+      if (isDestructionActive()) {
+        progressText.textContent = 'Destruindo qualidade do PNG...';
+        await applyQualityDestruction(frameCanvas, destructionSettings);
+      }
+
+      progressBar.style.width = '90%';
+      const finalBlob = await new Promise(res => frameCanvas.toBlob(res, 'image/png'));
+      finishConversionSuccess(finalBlob, maxLimitLabel, media);
+      return;
+    }
 
     // =========================================================================
     // CASO 2: CONVERSÃO DE IMAGEM ESTÁTICA PARA GIF
@@ -1438,10 +1591,11 @@ function finishConversionSuccess(blob, maxLimitLabel, media) {
     convertBtn.disabled = false;
   }, 300);
 
+  const isPng = blob.type === 'image/png' || outputFormat === 'png';
   currentGifBlob = blob;
   displayGifResult(blob, maxLimitLabel);
-  updateStatusBadge('ready', 'GIF Concluído');
-  showToast(`GIF gerado com sucesso! (${formatBytes(blob.size)})`, 'success');
+  updateStatusBadge('ready', isPng ? 'PNG Concluído' : 'GIF Concluído');
+  showToast(`${isPng ? 'PNG' : 'GIF'} gerado com sucesso! (${formatBytes(blob.size)})`, 'success');
 
   const tweetData = media.tweetData || null;
   saveToHistory({ sizeFormatted: formatBytes(blob.size) }, tweetData);
@@ -1457,8 +1611,10 @@ function displayGifResult(blob, maxLimitLabel) {
   gifSizeText.textContent = formatBytes(blob.size);
   gifLimitText.textContent = `(≤ ${maxLimitLabel})`;
 
+  const isPng = blob.type === 'image/png' || outputFormat === 'png';
+  const ext = isPng ? 'png' : 'gif';
   downloadLink.href = url;
-  downloadLink.download = `leaffmpeg_${Date.now()}.gif`;
+  downloadLink.download = `leaffmpeg_${Date.now()}.${ext}`;
 
   resultContainer.classList.add('visible');
   resultContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -1501,6 +1657,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   console.log('[LeaFFMPEG] Popup inicializado.');
   updateStatusBadge('ready', 'Pronto');
   setupDestroyerEvents();
+  setupFormatSelectorEvents();
 
   try {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });

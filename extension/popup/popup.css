@@ -1067,6 +1067,56 @@ body {
 }
 
 /* =============================================================================
+   7.2 SELETOR DE FORMATO DE SAÍDA (GIF / PNG)
+   ============================================================================= */
+.format-selector-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 4px 2px 0 2px;
+}
+
+.format-selector-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--text-subtle);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.format-toggle-group {
+  display: flex;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-pill);
+  padding: 2px;
+  gap: 2px;
+}
+
+.btn-format-pill {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  padding: 3px 12px;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.btn-format-pill:hover {
+  color: var(--text-main);
+}
+
+.btn-format-pill.active {
+  background: var(--accent-primary);
+  color: #ffffff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* =============================================================================
    8. BOTÃO HERO CTA (AÇÃO PRINCIPAL FLAT)
    ============================================================================= */
 .cta-container {
