@@ -922,22 +922,6 @@ body {
   transform: rotate(180deg);
 }
 
-.destroyer-active-badge {
-  margin-left: auto;
-  font-size: 0.625rem;
-  background: #f97316;
-  color: #ffffff;
-  padding: 1px 6px;
-  border-radius: var(--radius-pill);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.destroyer-active-badge.hidden {
-  display: none;
-}
-
 .btn-clear-destroyer {
   display: none;
   align-items: center;

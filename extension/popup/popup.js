@@ -68,7 +68,6 @@ const charCount = document.getElementById('charCount');
 const toggleDestroyerBtn = document.getElementById('toggleDestroyerBtn');
 const resetDestroyerBtn = document.getElementById('resetDestroyerBtn');
 const destroyerBtnText = document.getElementById('destroyerBtnText');
-const destroyerBadge = document.getElementById('destroyerBadge');
 const destroyerPanel = document.getElementById('destroyerPanel');
 const jpegCrunchSlider = document.getElementById('jpegCrunchSlider');
 const jpegCrunchVal = document.getElementById('jpegCrunchVal');
@@ -370,35 +369,9 @@ function updateLiveCaptionPreview() {
   }
 }
 
-/** Atualiza dinamicamente o texto do botão Hero com base no tipo de mídia, legenda e destruição */
+/** O botão de conversão sempre exibe estritamente "Exportar GIF" */
 function updateHeroButtonLabel() {
-  const media = activeMediaList[selectedMediaIndex];
-  const hasCaption = captionInput.value.trim().length > 0;
-  const hasDestruct = isDestructionActive();
-  const maxLimitLabel = currentMode === 'discord' ? '8MB' : '20MB';
-
-  if (!media) {
-    convertBtnLabel.textContent = `Gerar GIF para Discord`;
-    return;
-  }
-
-  if (hasDestruct && hasCaption) {
-    convertBtnLabel.textContent = 'Gerar GIF Meme Destruído 🔥';
-  } else if (hasDestruct) {
-    convertBtnLabel.textContent = 'Gerar GIF Destruído 🔥';
-  } else if (hasCaption) {
-    convertBtnLabel.textContent = 'Gerar GIF com Legenda';
-  } else if (media.type === 'photo') {
-    convertBtnLabel.textContent = 'Converter Imagem para GIF Estático';
-  } else if (media.type === 'gif') {
-    if (media.fileSize && media.fileSize <= (LIMITS[currentMode] || LIMITS.discord)) {
-      convertBtnLabel.textContent = `Baixar GIF Original (≤${maxLimitLabel})`;
-    } else {
-      convertBtnLabel.textContent = `Otimizar GIF para Discord (≤${maxLimitLabel})`;
-    }
-  } else {
-    convertBtnLabel.textContent = `Gerar GIF para Discord (≤${maxLimitLabel})`;
-  }
+  convertBtnLabel.textContent = 'Exportar GIF';
 }
 
 // =============================================================================
@@ -463,7 +436,6 @@ function applyPreset(preset) {
 
 function onDestructionChanged() {
   const active = isDestructionActive();
-  destroyerBadge.classList.toggle('hidden', !active);
   resetDestroyerBtn.classList.toggle('visible', active);
   updateHeroButtonLabel();
   updateLiveDestructionPreview();
